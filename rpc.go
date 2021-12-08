@@ -49,7 +49,7 @@ func (rf *Raft) broadcast(method string, args interface{}, fun func(ok bool)) {
 	}
 }
 
-//心跳检测回复
+// HeartBeatResponse 心跳检测回复
 func (rf *Raft) HeartBeatResponse(node NodeInfo, b *bool) error {
 	//因为发送心跳的一定是leader
 	rf.setCurrentLeader(node.ID)
@@ -60,16 +60,16 @@ func (rf *Raft) HeartBeatResponse(node NodeInfo, b *bool) error {
 	return nil
 }
 
-//确认领导者
+// ConfirmationLeader 确认领导者
 func (rf *Raft) ConfirmationLeader(node NodeInfo, b *bool) error {
 	rf.setCurrentLeader(node.ID)
 	*b = true
-	fmt.Println("已发现网络中的领导节点，", node.ID, "成为了领导者！\n")
+	fmt.Println("已发现网络中的领导节点，", node.ID, "成为了领导者！")
 	rf.reDefault()
 	return nil
 }
 
-//投票
+// Vote 投票
 func (rf *Raft) Vote(node NodeInfo, b *bool) error {
 	if rf.votedFor == "-1" && rf.currentLeader == "-1" {
 		rf.setVoteFor(node.ID)
@@ -81,21 +81,21 @@ func (rf *Raft) Vote(node NodeInfo, b *bool) error {
 	return nil
 }
 
-//领导者接收到跟随者节点转发过来的消息
+// LeaderReceiveMessage 领导者接收到跟随者节点转发过来的消息
 func (rf *Raft) LeaderReceiveMessage(message Message, b *bool) error {
 	fmt.Printf("领导者节点接收到转发过来的消息，id为:%d\n", message.MsgID)
 	MessageStore[message.MsgID] = message.MsgBody
 	*b = true
 	fmt.Println("准备将消息进行广播...")
 	//广播给其他跟随者
-	var acrecv int
+	var rec int
 	go rf.broadcast("Raft.ReceiveMessage", message, func(ok bool) {
 		if ok {
-			acrecv++
+			rec++
 		}
 	})
 	for {
-		if acrecv >= nodeCount/2+1 {
+		if rec >= nodeCount/2+1 {
 			fmt.Printf("大部分节点接收到消息id:%d\n", message.MsgID)
 			fmt.Printf("raft验证通过,可以打印消息,id为:[%d],消息为:[%s]\n", message.MsgID, MessageStore[message.MsgID])
 			rf.lastMessageTime = millisecond()
@@ -111,7 +111,7 @@ func (rf *Raft) LeaderReceiveMessage(message Message, b *bool) error {
 	return nil
 }
 
-//跟随者节点用来接收消息，然后存储到消息池中，待领导者确认后打印
+// ReceiveMessage 跟随者节点用来接收消息，然后存储到消息池中，待领导者确认后打印
 func (rf *Raft) ReceiveMessage(message Message, b *bool) error {
 	fmt.Printf("接收到领导者节点发来的信息，id:%d\n", message.MsgID)
 	MessageStore[message.MsgID] = message.MsgBody
@@ -120,7 +120,7 @@ func (rf *Raft) ReceiveMessage(message Message, b *bool) error {
 	return nil
 }
 
-//追随者节点的反馈得到领导者节点的确认，开始打印消息
+// ConfirmationMessage 追随者节点的反馈得到领导者节点的确认，开始打印消息
 func (rf *Raft) ConfirmationMessage(message Message, b *bool) error {
 	go func() {
 		for {

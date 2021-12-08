@@ -22,7 +22,7 @@ var heartBeatTimeout = 7
 //心跳检测频率（秒）
 var heartBeatTimes = 3
 
-//存储信息
+// MessageStore 存储信息
 var MessageStore = make(map[int]string)
 
 func main() {

@@ -146,7 +146,7 @@ func (rf *Raft) reDefault() {
 //给跟随者节点发送心跳包
 func (rf *Raft) heartbeat() {
 	//如果收到通道开启的消息，将会向其他节点进行固定频率的心跳检测
-	<-rf.heartChan //没有收到channal就会阻塞等待
+	<-rf.heartChan //没有收到channel就会阻塞等待
 	for {
 		fmt.Println("本节点开始发送心跳检测")
 		rf.broadcast("Raft.HeartBeatResponse", rf.node, func(ok bool) {
@@ -207,9 +207,9 @@ func (rf *Raft) election() bool {
 				rf.setStatus(2)
 				//当前领导者为自己
 				rf.setCurrentLeader(rf.me)
-				fmt.Println("向其他节点进行广播...")
+				fmt.Println("向其他节点进行广播本节点成为了leader...")
 				go rf.broadcast("Raft.ConfirmationLeader", rf.node, func(ok bool) {
-					fmt.Println(ok)
+					fmt.Println("设置", rf.node.ID, "为当前节点的领导者", ok)
 				})
 				//开启心跳检测通道
 				rf.heartChan <- true

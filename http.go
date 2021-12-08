@@ -18,7 +18,11 @@ func (rf *Raft) httpListen() {
 	}
 }
 func (rf *Raft) getRequest(writer http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
+	defer request.Body.Close()
+	err := request.ParseForm()
+	if err != nil {
+		log.Panicln(err)
+	}
 	if len(request.Form["message"]) > 0 && rf.currentLeader != "-1" {
 		message := request.Form["message"][0]
 		//封装消息
@@ -41,7 +45,7 @@ func (rf *Raft) getRequest(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-//返回一个十位数的随机数，作为消息idgit
+//返回一个十位数的随机数，作为msg.id
 func getRandom() int {
 	id := rand.Intn(1000000000) + 1000000000
 	return id
