@@ -18,15 +18,13 @@ func rpcRegister(raft *Raft) {
 	//把RPC服务绑定到http协议上
 	rpc.HandleHTTP()
 	//127.0.0.1:6870|6871|6872
-	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Panicln("注册RPC失败", err)
-	}
+	http.ListenAndServe(port, nil)
 }
 
-//广播
+//广播，调用所有节点的method方法（不广播自己）
 func (rf *Raft) broadcast(method string, args interface{}, fun func(ok bool)) {
-	//不广播自己
 	for nodeID, nodePort := range nodePool {
+		//不广播自己
 		if nodeID == rf.me {
 			continue
 		}
@@ -51,10 +49,10 @@ func (rf *Raft) broadcast(method string, args interface{}, fun func(ok bool)) {
 
 // HeartBeatResponse 心跳检测回复
 func (rf *Raft) HeartBeatResponse(node NodeInfo, b *bool) error {
-	//因为发送心跳的一定是leader
+	//因为发送心跳的一定是leader，之所以写这一句的目的是如果有down的节点恢复了，直接是follower，所以直接告诉它leader是谁即可
 	rf.setCurrentLeader(node.ID)
 	//最后一次心跳的时间
-	rf.lastHeartBeatTime = millisecond()
+	rf.lastSendHeartBeatTime = millisecond()
 	fmt.Printf("收到来自leader[%s]节点的心跳检测\n", node.ID)
 	*b = true
 	return nil
@@ -98,7 +96,7 @@ func (rf *Raft) LeaderReceiveMessage(message Message, b *bool) error {
 		if rec >= nodeCount/2+1 {
 			fmt.Printf("大部分节点接收到消息id:%d\n", message.MsgID)
 			fmt.Printf("raft验证通过,可以打印消息,id为:[%d],消息为:[%s]\n", message.MsgID, MessageStore[message.MsgID])
-			rf.lastMessageTime = millisecond()
+			rf.lastSendMessageTime = millisecond()
 			fmt.Println("准备将消息提交信息发送至客户端...")
 			go rf.broadcast("Raft.ConfirmationMessage", message, func(ok bool) {
 			})
@@ -126,7 +124,7 @@ func (rf *Raft) ConfirmationMessage(message Message, b *bool) error {
 		for {
 			if _, ok := MessageStore[message.MsgID]; ok {
 				fmt.Printf("raft验证通过,可以打印消息,id为:[%d],消息为:[%s]\n", message.MsgID, MessageStore[message.MsgID])
-				rf.lastMessageTime = millisecond()
+				rf.lastSendMessageTime = millisecond()
 				break
 			} else {
 				//可能这个节点的网络传输很慢，等一会

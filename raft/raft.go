@@ -33,13 +33,13 @@ type Raft struct {
 	//当前节点状态0 follower  1 candidate  2 leader
 	state int
 	//发送最后一条消息的时间
-	lastMessageTime int64
+	lastSendMessageTime int64
 	//发送最后一次心跳的时间
-	lastHeartBeatTime int64
+	lastSendHeartBeatTime int64
 	//当前节点的领导
 	currentLeader string
 	//心跳超时时间（秒）
-	timeout int
+	heartBeatTimeout int
 	//接收投票成功通道
 	voteChan chan bool
 	//心跳信号
@@ -61,9 +61,9 @@ func NewRaft(id, port string) *Raft {
 	//设置节点状态 0 follower
 	rf.setStatus(0)
 	//最后一次心跳检测时间
-	rf.lastHeartBeatTime = 0
+	rf.lastSendHeartBeatTime = 0
 	//心跳超时时间
-	rf.timeout = heartBeatTimeout
+	rf.heartBeatTimeout = heartBeatTimeout
 	//最初没有领导
 	rf.setCurrentLeader("-1")
 	//设置任期
@@ -153,9 +153,9 @@ func (rf *Raft) sendHeartPacket() {
 			fmt.Println("收到心跳检测", ok)
 		})
 		//最后一次心跳的时间
-		rf.lastHeartBeatTime = millisecond()
+		rf.lastSendHeartBeatTime = millisecond()
 		//休眠 --》心跳检测频率的时间
-		time.Sleep(time.Second * time.Duration(heartBeatTimes))
+		time.Sleep(time.Second * time.Duration(heartBeatRate))
 	}
 }
 
@@ -192,7 +192,7 @@ func (rf *Raft) election() bool {
 	for {
 		select {
 		//选举超时
-		case <-time.After(time.Second * time.Duration(timeout)):
+		case <-time.After(time.Second * time.Duration(electionTimeout)):
 			fmt.Println("领导者选举超时，节点变更为追随者状态")
 			rf.reDefault()
 			return false
@@ -244,12 +244,12 @@ func (rf *Raft) heartTimeoutDetection() {
 		//0.5秒检测一次
 		time.Sleep(time.Millisecond * 5000)
 		//心跳超时
-		if rf.lastHeartBeatTime != 0 && (millisecond()-rf.lastHeartBeatTime) > int64(rf.timeout*1000) {
-			fmt.Printf("心跳检测超时，已超过%d秒\n", rf.timeout)
+		if rf.lastSendHeartBeatTime != 0 && (millisecond()-rf.lastSendHeartBeatTime) > int64(rf.heartBeatTimeout*1000) {
+			fmt.Printf("心跳检测超时，已超过%d秒\n", rf.heartBeatTimeout)
 			fmt.Println("即将重新开启选举")
 			rf.reDefault()
 			rf.setCurrentLeader("-1")
-			rf.lastHeartBeatTime = 0
+			rf.lastSendHeartBeatTime = 0
 			go rf.tryToBeCandidateWithElection()
 		}
 	}

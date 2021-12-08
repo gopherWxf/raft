@@ -12,13 +12,13 @@ var nodeCount = 3
 var nodePool map[string]string
 
 //选举超时时间（秒）
-var timeout = 3
+var electionTimeout = 3
 
 //心跳检测超时时间
 var heartBeatTimeout = 7
 
 //心跳检测频率（秒）
-var heartBeatTimes = 3
+var heartBeatRate = 3
 
 // MessageStore 存储信息
 var MessageStore = make(map[int]string)
@@ -30,15 +30,20 @@ func Start(nodeNum int, nodeTable map[string]string) {
 	if len(os.Args) < 1 {
 		log.Panicln("缺少程序运行的参数")
 	}
-	id := os.Args[1] //即 A、B、C其中一个
+
+	//即 A、B、C其中一个
+	id := os.Args[1]
+
 	//传入节点编号，端口号，创建raft实例
 	raft := NewRaft(id, nodePool[id])
+
 	//注册rpc服务绑定http协议上开启监听
 	go rpcRegister(raft)
+
 	//发送心跳包
 	go raft.sendHeartPacket()
 
-	//开启一个Http监听
+	//开启一个Http监听client发来的信息
 	go raft.httpListen()
 
 	//尝试成为候选人并选举

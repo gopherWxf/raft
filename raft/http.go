@@ -15,10 +15,7 @@ func (rf *Raft) httpListen() {
 	port, _ := strconv.Atoi(rf.node.Port[1:])
 	port += 2000
 	fmt.Println("监听", strconv.Itoa(port), "端口")
-	if err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), nil); err != nil {
-		fmt.Println(err)
-		return
-	}
+	http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), nil)
 }
 
 func (rf *Raft) getRequest(writer http.ResponseWriter, request *http.Request) {
@@ -33,12 +30,14 @@ func (rf *Raft) getRequest(writer http.ResponseWriter, request *http.Request) {
 		m := new(Message)
 		m.MsgBody = message
 		m.MsgID = getRandom()
-		//接收到消息后，直接转发到领导者
+
+		//连接leader节点的RPC
 		port := nodePool[rf.currentLeader]
 		conn, err := rpc.DialHTTP("tcp", "127.0.0.1"+port)
 		if err != nil {
 			log.Panicln(err)
 		}
+		//接收到消息后，直接转发到领导者
 		var bo bool
 		err = conn.Call("Raft.LeaderReceiveMessage", m, &bo)
 		if err != nil {
