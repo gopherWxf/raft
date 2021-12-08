@@ -42,6 +42,11 @@ func main() {
 	//开启心跳检测
 	go raft.heartbeat()
 
+	//开启一个Http监听
+	if id == "A" {
+		go raft.httpListen()
+	}
+
 	//开启选举
 	election := func() {
 		for {

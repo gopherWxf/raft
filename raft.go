@@ -33,7 +33,7 @@ type Raft struct {
 	//当前节点状态0 follower  1 candidate  2 leader
 	state int
 	//发送最后一条消息的时间
-	lastMessageTIme int64
+	lastMessageTime int64
 	//发送最后一次心跳的时间
 	lastHeartBeatTime int64
 	//当前节点的领导

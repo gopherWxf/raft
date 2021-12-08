@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/rpc"
+	"time"
 )
 
 //rpc服务注册
@@ -77,5 +78,62 @@ func (rf *Raft) Vote(node NodeInfo, b *bool) error {
 	} else {
 		*b = false
 	}
+	return nil
+}
+
+//领导者接收到跟随者节点转发过来的消息
+func (rf *Raft) LeaderReceiveMessage(message Message, b *bool) error {
+	fmt.Printf("领导者节点接收到转发过来的消息，id为:%d\n", message.MsgID)
+	MessageStore[message.MsgID] = message.MsgBody
+	*b = true
+	fmt.Println("准备将消息进行广播...")
+	//广播给其他跟随者
+	var acrecv int
+	go rf.broadcast("Raft.ReceiveMessage", message, func(ok bool) {
+		if ok {
+			acrecv++
+		}
+	})
+	for {
+		if acrecv >= nodeCount/2+1 {
+			fmt.Printf("大部分节点接收到消息id:%d\n", message.MsgID)
+			fmt.Printf("raft验证通过,可以打印消息,id为:[%d],消息为:[%s]\n", message.MsgID, MessageStore[message.MsgID])
+			rf.lastMessageTime = millisecond()
+			fmt.Println("准备将消息提交信息发送至客户端...")
+			go rf.broadcast("Raft.ConfirmationMessage", message, func(ok bool) {
+			})
+			break
+		} else {
+			//可能别的节点还没回复，等待一会
+			time.Sleep(time.Millisecond * 100)
+		}
+	}
+	return nil
+}
+
+//跟随者节点用来接收消息，然后存储到消息池中，待领导者确认后打印
+func (rf *Raft) ReceiveMessage(message Message, b *bool) error {
+	fmt.Printf("接收到领导者节点发来的信息，id:%d\n", message.MsgID)
+	MessageStore[message.MsgID] = message.MsgBody
+	*b = true
+	fmt.Println("已回复接收到消息，待领导者确认后打印")
+	return nil
+}
+
+//追随者节点的反馈得到领导者节点的确认，开始打印消息
+func (rf *Raft) ConfirmationMessage(message Message, b *bool) error {
+	go func() {
+		for {
+			if _, ok := MessageStore[message.MsgID]; ok {
+				fmt.Printf("raft验证通过,可以打印消息,id为:[%d],消息为:[%s]\n", message.MsgID, MessageStore[message.MsgID])
+				rf.lastMessageTime = millisecond()
+				break
+			} else {
+				//可能这个节点的网络传输很慢，等一会
+				time.Sleep(time.Millisecond * 10)
+			}
+		}
+	}()
+	*b = true
 	return nil
 }
