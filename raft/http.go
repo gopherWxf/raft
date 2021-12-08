@@ -6,13 +6,16 @@ import (
 	"math/rand"
 	"net/http"
 	"net/rpc"
+	"strconv"
 )
 
 func (rf *Raft) httpListen() {
 	//创建getRequest()回调方法
 	http.HandleFunc("/req", rf.getRequest)
-	fmt.Println("监听8080")
-	if err := http.ListenAndServe("127.0.0.1:8080", nil); err != nil {
+	port, _ := strconv.Atoi(rf.node.Port[1:])
+	port += 2000
+	fmt.Println("监听", strconv.Itoa(port), "端口")
+	if err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(port), nil); err != nil {
 		fmt.Println(err)
 		return
 	}

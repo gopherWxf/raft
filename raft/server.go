@@ -41,9 +41,7 @@ func Start(nodeNum int, nodeTable map[string]string) {
 	go raft.heartbeat()
 
 	//开启一个Http监听
-	if id == "A" {
-		go raft.httpListen()
-	}
+	go raft.httpListen()
 
 	//开启选举
 	election := func() {
