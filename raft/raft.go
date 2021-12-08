@@ -144,7 +144,7 @@ func (rf *Raft) reDefault() {
 }
 
 //给跟随者节点发送心跳包
-func (rf *Raft) heartbeat() {
+func (rf *Raft) sendHeartPacket() {
 	//如果收到通道开启的消息，将会向其他节点进行固定频率的心跳检测
 	<-rf.heartChan //没有收到channel就会阻塞等待
 	for {
@@ -211,10 +211,46 @@ func (rf *Raft) election() bool {
 				go rf.broadcast("Raft.ConfirmationLeader", rf.node, func(ok bool) {
 					fmt.Println("其他节点:是否同意[", rf.node.ID, "]为领导者", ok)
 				})
-				//开启心跳检测通道
+				//有leader了，可以发送心跳包了
 				rf.heartChan <- true
 				return true
 			}
+		}
+	}
+}
+
+//尝试成为候选人并选举
+func (rf *Raft) tryToBeCandidateWithElection() {
+	for {
+		//尝试成为候选人节点
+		if rf.becomeCandidate() {
+			//成为后选人节点后 向其他节点要选票来进行选举
+			if rf.election() {
+				break
+			} else {
+				continue //领导者选举超时,重新称为候选人进行选举
+			}
+		} else {
+			//没有变成候选人，则退出
+			//不是跟随者，或者有领导，或者为别人投票
+			break
+		}
+	}
+}
+
+//心跳超时检测
+func (rf *Raft) heartTimeoutDetection() {
+	for {
+		//0.5秒检测一次
+		time.Sleep(time.Millisecond * 5000)
+		//心跳超时
+		if rf.lastHeartBeatTime != 0 && (millisecond()-rf.lastHeartBeatTime) > int64(rf.timeout*1000) {
+			fmt.Printf("心跳检测超时，已超过%d秒\n", rf.timeout)
+			fmt.Println("即将重新开启选举")
+			rf.reDefault()
+			rf.setCurrentLeader("-1")
+			rf.lastHeartBeatTime = 0
+			go rf.tryToBeCandidateWithElection()
 		}
 	}
 }

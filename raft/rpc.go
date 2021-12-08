@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-//rpc服务注册
+//注册rpc服务绑定http协议上开启监听
 func rpcRegister(raft *Raft) {
 	//注册一个RPC服务器
 	if err := rpc.Register(raft); err != nil {
