@@ -1,4 +1,4 @@
-package main
+package raft
 
 import (
 	"fmt"
@@ -209,7 +209,7 @@ func (rf *Raft) election() bool {
 				rf.setCurrentLeader(rf.me)
 				fmt.Println("向其他节点进行广播本节点成为了leader...")
 				go rf.broadcast("Raft.ConfirmationLeader", rf.node, func(ok bool) {
-					fmt.Println("设置", rf.node.ID, "为当前节点的领导者", ok)
+					fmt.Println("收到", rf.node.ID, "为领导者的消息", ok)
 				})
 				//开启心跳检测通道
 				rf.heartChan <- true
