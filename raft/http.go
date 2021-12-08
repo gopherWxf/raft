@@ -20,6 +20,7 @@ func (rf *Raft) httpListen() {
 		return
 	}
 }
+
 func (rf *Raft) getRequest(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 	err := request.ParseForm()
