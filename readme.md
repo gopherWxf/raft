@@ -1,11 +1,11 @@
-#Golang实现Raft一致性算法
+# Golang实现Raft一致性算法
 # 前言
 本文在理解raft算法的基础上，实现了简易版的raft算法
 [github源码地址](https://github.com/gopherWxf/raft)
 
 # 流程分析
 //TODO 明天再优化流程图,累了
-![在这里插入图片描述](images/1.png)
+![在这里插入图片描述](images/raft.jpg)
 # 功能实现
 - 节点状态分为Leader（领导者）、Follower（追随者）、Candidate（候选人）
 - 节点间随机成为candidate状态并选举出Leader，且同时仅存在一个Leader
