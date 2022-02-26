@@ -51,12 +51,3 @@ http://localhost:8872/req?message=You
 6. 重新启动节点C，C自动变为追随者状态，并接收来自新的领导者B的心跳检测
    ![在这里插入图片描述](images/9.png)
 
-# 参考资料
-
-[corgi-kx/blockchain_consensus_algorithm
-](https://github.com/corgi-kx/blockchain_consensus_algorithm/tree/master/raft)
-
-
-[看动画轻松学会 Raft 算法](https://www.cnblogs.com/Finley/p/14467602.html)
-
-[Toggle navigationThe Secret Lives of Data-CN](https://acehi.github.io/thesecretlivesofdata-cn/raft/)
